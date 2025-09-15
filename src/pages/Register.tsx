@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ArrowLeft, Mail, Lock, User, Eye, EyeOff, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
+import api from "@/lib/api";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -65,39 +66,14 @@ const Register = () => {
     }
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Check if user already exists
-      const existingUsers = JSON.parse(localStorage.getItem('samanyay_users') || '[]');
-      if (existingUsers.some((u: any) => u.email === formData.email)) {
-        setError("An account with this email already exists");
-        return;
-      }
+      const { data } = await api.post('/auth/register', { email: formData.email, password: formData.password });
 
-      // Create new user
-      const newUser = {
-        id: Date.now().toString(),
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        password: formData.password, // In real app, this would be hashed
-        isPro: false,
-        createdAt: new Date().toISOString()
-      };
-
-      // Save user
-      existingUsers.push(newUser);
-      localStorage.setItem('samanyay_users', JSON.stringify(existingUsers));
-      
-      // Auto login
-      localStorage.setItem('samanyay_current_user', JSON.stringify(newUser));
-      
+      localStorage.setItem('samanyay_token', data.token);
+      localStorage.setItem('samanyay_current_user', JSON.stringify(data.user));
       toast.success("Account created successfully!");
       navigate('/dashboard');
-      
-    } catch (err) {
-      setError("An error occurred during registration");
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err?.message || "An error occurred during registration");
     } finally {
       setLoading(false);
     }

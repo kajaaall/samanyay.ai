@@ -1,171 +1,156 @@
-# Samanyay - AI-Powered Legal Research Platform
+🏛️ Samanyay — AI-Powered Legal Research Platform
+📌 Overview
 
-## 🏛️ Project Overview
+Samanyay is a full-stack legal tech platform built as part of an internship coding challenge.
+It provides:
 
-**Samanyay** is a comprehensive legal tech platform built for the internship coding challenge. It provides AI-powered legal research tools, secure case management, and premium features for legal professionals.
+Secure user authentication
 
-## ✨ Features Implemented
+Private case management with file uploads
 
-### 🔐 User Authentication & Profile
-- **Secure Registration**: Email/password registration with validation
-- **User Login**: JWT-based session management (simulated)
-- **Protected Routes**: Dashboard and premium features require authentication
-- **Password Security**: Secure password hashing (simulated)
-- **Demo Account**: `demo@lawfirm.com` / `demo123`
+Payment gateway integration for Pro accounts
 
-### 📁 Case Management System
-- **Personal Dashboard**: Secure, user-specific case overview
-- **Case Creation**: Add cases with title, description, and file uploads
-- **Private Cases**: Users can only see their own cases
-- **File Upload**: PDF and document upload functionality
-- **Case Status**: Active, pending, and closed case management
-- **Search & Filter**: Real-time case search capabilities
+The platform is built with a React + Express + MongoDB stack.
 
-### 💳 Payment Gateway Integration
-- **Stripe Integration**: Professional payment processing setup
-- **Pro Upgrade**: "Upgrade to Pro" functionality
-- **Account Status**: Pro/Free account management
-- **Payment Demo**: Test payment flow with simulated processing
-- **Premium Features**: Enhanced features for Pro users
+⚡ Features
+🔐 User Authentication & Profile
 
-## 🎨 Design System
+Email/password registration with validation
 
-### Professional Legal Tech Aesthetic
-- **Color Palette**: Deep professional blues, clean whites, elegant accents
-- **Typography**: Inter font family for maximum readability
-- **Components**: Custom shadcn/ui components with legal-specific variants
-- **Animations**: Smooth transitions with bounce effects for engagement
-- **Responsive**: Mobile-first design approach
+Secure login with JWT session tokens
 
-### Key Visual Elements
-- **Gradient Buttons**: Primary actions use branded gradients
-- **Card Layouts**: Clean, elevated cards for content organization
-- **Professional Icons**: Lucide React icons for consistency
-- **Shadow System**: Elegant depth with custom shadow tokens
+Protected routes for authenticated users
 
-## 🚀 Technology Stack
+Passwords securely hashed with bcrypt
 
-### Frontend
-- **React 18**: Modern React with hooks and context
-- **TypeScript**: Type-safe development
-- **Tailwind CSS**: Utility-first styling with custom design tokens
-- **Vite**: Lightning-fast development and build
-- **React Router**: Client-side routing
+Auth middleware for route protection
 
-### UI Components
-- **shadcn/ui**: High-quality component library
-- **Radix UI**: Accessible primitive components  
-- **Lucide React**: Professional icon system
-- **Class Variance Authority**: Component variant management
+📁 Case Management System
 
-### State Management
-- **LocalStorage**: Persistent data simulation (users, cases)
-- **React Hooks**: State management with useState/useEffect
-- **Context API**: Global user authentication state
+Personal dashboard showing only logged-in user’s cases
 
-## 🏗️ Architecture
+Create cases with title, description, and file uploads (PDF/docs)
 
-### Component Structure
-```
-src/
-├── components/ui/          # Reusable UI components
-├── pages/                  # Application pages
-│   ├── Landing.tsx        # Marketing homepage
-│   ├── Login.tsx          # User authentication
-│   ├── Register.tsx       # User registration  
-│   ├── Dashboard.tsx      # Case management
-│   ├── Payment.tsx        # Pro upgrade flow
-│   └── NotFound.tsx       # 404 error page
-├── assets/                # Generated images and resources
-└── lib/                   # Utility functions
-```
+Files uploaded and stored on the server
 
-### Design System Files
-- **`index.css`**: Complete design token system
-- **`tailwind.config.ts`**: Extended Tailwind configuration
-- **`components/ui/button.tsx`**: Enhanced button variants
+Real-time case fetching from the backend
 
-## 🔧 Installation & Setup
+Users cannot see cases created by others
 
-1. **Clone the repository**
-2. **Install dependencies**: `npm install`
-3. **Start development**: `npm run dev`
-4. **Build for production**: `npm run build`
+💳 Payment Gateway Integration
 
-## 🧪 Demo Credentials
+Stripe (test mode) payment flow
 
-For testing the application:
-- **Email**: `demo@lawfirm.com`
-- **Password**: `demo123`
+“Upgrade to Pro” button on dashboard
 
-The demo account includes a sample case to showcase the case management functionality.
+On payment success, backend updates user.isPro = true
 
-## 📱 Usage Guide
+Pro account status persisted in DB
 
-### Getting Started
-1. Visit the landing page to explore features
-2. Register for a new account or use demo credentials
-3. Access the dashboard to manage cases
-4. Create new cases with document uploads
-5. Upgrade to Pro for premium features
+🏗️ Architecture
 
-### Case Management
-- **Create Cases**: Use the "New Case" button on dashboard
-- **Upload Files**: Attach PDF documents to cases
-- **Search Cases**: Use the search bar to find specific cases
-- **View Details**: Click on cases to see full information
+Monorepo-style structure:
 
-### Pro Upgrade
-- **Access Payment**: Click "Upgrade to Pro" in navigation
-- **Test Payment**: Use the demo payment flow
-- **Pro Features**: Unlock advanced AI research tools
+.
+├── Samanyay.Ai/          # Frontend (React + TS + Vite)
+│   ├── src/
+│   │   ├── pages/         # Landing, Login, Register, Dashboard, Payment, NotFound
+│   │   ├── components/ui/ # ShadCN-style UI components
+│   │   └── lib/api.ts     # Axios client with baseURL + auth token
+│   └── .env               # VITE_API_URL
+│
+└── server/                # Backend (Express + MongoDB)
+    ├── server.js           # Entry point
+    ├── config/db.js         # MongoDB connection
+    ├── models/User.js       # { email, password(hashed), isPro }
+    ├── models/Case.js       # { userId, title, description, fileUrl }
+    ├── middleware/authMiddleware.js
+    ├── controllers/
+    │   ├── authController.js
+    │   ├── caseController.js
+    │   └── paymentController.js
+    ├── routes/
+    │   ├── authRoutes.js
+    │   ├── caseRoutes.js
+    │   └── paymentRoutes.js
+    ├── uploads/              # Stored user-uploaded files
+    └── .env
 
-## 🛡️ Security Features
+🗃️ Database Schema
+User
+{
+  email: String,
+  password: String,  // bcrypt hashed
+  isPro: Boolean
+}
 
-- **Route Protection**: Authenticated routes redirect to login
-- **Data Isolation**: Users only access their own cases
-- **Input Validation**: Form validation and error handling
-- **Secure Storage**: Simulated secure data persistence
+Case
+{
+  userId: ObjectId,  // Reference to User
+  title: String,
+  description: String,
+  fileUrl: String    // Path to uploaded file
+}
 
-## 🎯 Challenge Requirements Met
+⚙️ Setup Instructions
+📦 Backend (server/)
+cd server
+npm install
 
-### ✅ Core Features Completed
 
-1. **User Authentication & Profile**
-   - [x] User registration with email/password
-   - [x] Secure login system
-   - [x] JWT session management (simulated)
-   - [x] Protected routes implementation
+Create a .env file inside server/:
 
-2. **Case Management System**
-   - [x] Personal dashboard for logged-in users
-   - [x] Case creation with title and description
-   - [x] Private case visibility (user-specific)
-   - [x] File upload functionality for cases
+PORT=5000
+DB_URI=your_mongodb_uri
+JWT_SECRET=your_jwt_secret
+STRIPE_SECRET_KEY=your_stripe_test_key
+CORS_ORIGIN=http://localhost:8080
 
-3. **Payment Gateway Integration**
-   - [x] "Upgrade to Pro" button implementation
-   - [x] Stripe payment integration setup
-   - [x] Test payment processing
-   - [x] Pro status update in database
 
-### 🏆 Additional Features
+Then run:
 
-- **Professional Design**: Beautiful, modern UI/UX
-- **Responsive Layout**: Mobile and desktop optimized
-- **Search & Filter**: Enhanced case management
-- **Demo Account**: Pre-configured for testing
-- **Error Handling**: Comprehensive error states
-- **Loading States**: Professional loading indicators
+npm run dev
 
-## 🚀 Production Deployment
+💻 Frontend (Samanyay.Ai/)
+cd Samanyay.Ai
+npm install
 
-The application is built with Vite and ready for deployment on any static hosting platform. The design system ensures consistent visual identity across all devices and screen sizes.
 
-## 📞 Contact
+Create a .env file inside Samanyay.Ai/:
 
-Built as part of the Samanyay Legal Tech internship coding challenge, demonstrating full-stack development capabilities with modern web technologies.
+VITE_API_URL=http://localhost:5000/api
 
----
 
-*This project showcases the implementation of a professional legal tech platform with secure authentication, case management, and payment processing capabilities.*
+Then run:
+
+npm run dev
+
+
+Frontend will start at http://localhost:8080
+
+📡 API Documentation
+Method	Endpoint	Description	Auth
+POST	/api/auth/register	Register new user	❌
+POST	/api/auth/login	Login user, returns {token, user}	❌
+GET	/api/cases	Get all cases for logged-in user	✅
+POST	/api/cases	Create a case (multipart: title, description, file)	✅
+POST	/api/payment/checkout	Simulate payment, sets isPro=true	✅
+GET	/api/health	Health check	❌
+
+Use the Authorization: Bearer <token> header for protected endpoints.
+
+🧪 Demo Credentials
+Email: demo@lawfirm.com
+Password: demo123
+
+📱 Usage Flow
+
+Register or log in (demo account available)
+
+Access the dashboard
+
+Create new cases and upload files
+
+Upgrade to Pro via the payment page
+
+Reload dashboard to see Pro status

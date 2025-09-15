@@ -1,16 +1,25 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ArrowLeft, Crown, Check, Zap, Shield, Users, CreditCard, Lock } from "lucide-react";
 import { toast } from "sonner";
+import api from "@/lib/api";
 
 const Payment = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [paymentStep, setPaymentStep] = useState(1);
+  const [cardName, setCardName] = useState("");
+  const [cardNumber, setCardNumber] = useState("");
+  const [expiry, setExpiry] = useState("");
+  const [cvc, setCvc] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
+  const [receipt, setReceipt] = useState<any | null>(null);
 
   useEffect(() => {
     const currentUser = localStorage.getItem('samanyay_current_user');
@@ -21,30 +30,68 @@ const Payment = () => {
     setUser(JSON.parse(currentUser));
   }, [navigate]);
 
+  const validateForm = () => {
+    const sanitizedNumber = cardNumber.replace(/\s+/g, "");
+    const cardNumValid = /^\d{16}$/.test(sanitizedNumber);
+    const nameValid = cardName.trim().length >= 2;
+    const expiryValid = /^(0[1-9]|1[0-2])\/(\d{2})$/.test(expiry.trim());
+    const cvcValid = /^\d{3,4}$/.test(cvc.trim());
+    if (!nameValid) return "Enter the name on card.";
+    if (!cardNumValid) return "Enter a valid 16-digit card number.";
+    if (!expiryValid) return "Enter a valid expiry in MM/YY format.";
+    if (!cvcValid) return "Enter a valid CVC.";
+    return null;
+  };
+
   const handlePayment = async () => {
     setLoading(true);
+    setFormError(null);
     
     try {
-      // Simulate payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Update user to Pro status
+      const validationMessage = validateForm();
+      if (validationMessage) {
+        throw new Error(validationMessage);
+      }
+
+      // Simulate gateway processing latency
+      await new Promise(resolve => setTimeout(resolve, 1800));
+
+      // Randomize outcome for demo (80% success)
+      const isSuccess = Math.random() < 0.8;
+
+      if (!isSuccess) {
+        throw new Error("Your bank declined the transaction. Try another card.");
+      }
+
+      // Create a fake receipt
+      const last4 = cardNumber.replace(/\s+/g, "").slice(-4);
+      const fakeTxnId = `txn_${Math.random().toString(36).slice(2, 10)}`;
+      const nowIso = new Date().toISOString();
+      const newReceipt = {
+        id: fakeTxnId,
+        amount: 99,
+        currency: "USD",
+        createdAt: nowIso,
+        cardLast4: last4,
+        plan: "Samanyay Pro (Monthly)"
+      };
+
+      // Call backend to mark Pro (and optionally process payment intent)
+      await api.post('/payment/checkout', { amount: 9900, currency: 'usd' });
+
+      // Update user to Pro status locally
       const updatedUser = { ...user, isPro: true };
       setUser(updatedUser);
       localStorage.setItem('samanyay_current_user', JSON.stringify(updatedUser));
-      
-      // Update in users array
-      const users = JSON.parse(localStorage.getItem('samanyay_users') || '[]');
-      const updatedUsers = users.map((u: any) => 
-        u.id === user.id ? updatedUser : u
-      );
-      localStorage.setItem('samanyay_users', JSON.stringify(updatedUsers));
-      
+
+      setReceipt(newReceipt);
       setPaymentStep(3);
       toast.success("Payment successful! Welcome to Samanyay Pro!");
       
     } catch (error) {
-      toast.error("Payment failed. Please try again.");
+      const message = error instanceof Error ? error.message : "Payment failed. Please try again.";
+      setFormError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -243,10 +290,69 @@ const Payment = () => {
                   </div>
 
                   <div className="space-y-4">
-                    <div className="text-center text-sm text-muted-foreground">
-                      Demo payment form - Click the button below to simulate payment
+                    <div>
+                      <Label htmlFor="cardName">Name on card</Label>
+                      <Input
+                        id="cardName"
+                        placeholder="John Doe"
+                        value={cardName}
+                        onChange={(e) => setCardName(e.target.value)}
+                        disabled={loading}
+                      />
                     </div>
-                    
+                    <div>
+                      <Label htmlFor="cardNumber">Card number</Label>
+                      <Input
+                        id="cardNumber"
+                        placeholder="4242 4242 4242 4242"
+                        inputMode="numeric"
+                        value={cardNumber}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/[^\d]/g, "").slice(0,16);
+                          const grouped = digits.replace(/(\d{4})(?=\d)/g, "$1 ");
+                          setCardNumber(grouped);
+                        }}
+                        disabled={loading}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">Try 4242 4242 4242 4242</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="expiry">Expiry (MM/YY)</Label>
+                        <Input
+                          id="expiry"
+                          placeholder="MM/YY"
+                          inputMode="numeric"
+                          value={expiry}
+                          onChange={(e) => {
+                            const digits = e.target.value.replace(/[^\d]/g, "").slice(0,4);
+                            const formatted = digits.length > 2 ? `${digits.slice(0,2)}/${digits.slice(2)}` : digits;
+                            setExpiry(formatted);
+                          }}
+                          disabled={loading}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="cvc">CVC</Label>
+                        <Input
+                          id="cvc"
+                          placeholder="123"
+                          inputMode="numeric"
+                          value={cvc}
+                          onChange={(e) => setCvc(e.target.value.replace(/[^\d]/g, "").slice(0,4))}
+                          disabled={loading}
+                        />
+                      </div>
+                    </div>
+
+                    {formError && (
+                      <Alert className="border-destructive/20 bg-destructive/10">
+                        <AlertDescription className="text-destructive text-sm">
+                          {formError}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
                     <Button 
                       onClick={handlePayment}
                       disabled={loading}
@@ -257,7 +363,7 @@ const Payment = () => {
                       ) : (
                         <>
                           <CreditCard className="mr-2 h-4 w-4" />
-                          Complete Payment ($99)
+                          Pay $99.00
                         </>
                       )}
                     </Button>
@@ -300,7 +406,20 @@ const Payment = () => {
                   </AlertDescription>
                 </Alert>
 
-                <div className="space-y-3">
+                <div className="space-y-3 text-left">
+                  {receipt && (
+                    <div className="p-4 rounded-lg border border-border bg-background/40">
+                      <h4 className="font-medium mb-2">Receipt</h4>
+                      <div className="text-sm space-y-1">
+                        <div className="flex justify-between"><span>Transaction</span><span className="font-mono">{receipt.id}</span></div>
+                        <div className="flex justify-between"><span>Date</span><span>{new Date(receipt.createdAt).toLocaleString()}</span></div>
+                        <div className="flex justify-between"><span>Plan</span><span>{receipt.plan}</span></div>
+                        <div className="flex justify-between"><span>Amount</span><span>${receipt.amount.toFixed(2)} {receipt.currency}</span></div>
+                        <div className="flex justify-between"><span>Card</span><span>**** **** **** {receipt.cardLast4}</span></div>
+                      </div>
+                    </div>
+                  )}
+
                   {proFeatures.map((feature, index) => (
                     <div key={index} className="flex items-center space-x-3 text-left">
                       <Check className="h-4 w-4 text-success flex-shrink-0" />

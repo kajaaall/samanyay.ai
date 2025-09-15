@@ -20,6 +20,7 @@ import {
   MoreVertical
 } from "lucide-react";
 import { toast } from "sonner";
+import api from "@/lib/api";
 
 interface Case {
   id: string;
@@ -59,9 +60,24 @@ const Dashboard = () => {
     const userData = JSON.parse(currentUser);
     setUser(userData);
 
-    // Load user's cases
-    const userCases = JSON.parse(localStorage.getItem(`samanyay_cases_${userData.id}`) || '[]');
-    setCases(userCases);
+    // Load user's cases from backend
+    (async () => {
+      try {
+        const { data } = await api.get('/cases');
+        setCases(
+          data.map((c: any) => ({
+            id: c._id,
+            title: c.title,
+            description: c.description,
+            createdAt: c.createdAt,
+            files: [],
+            status: 'active'
+          }))
+        );
+      } catch (e: any) {
+        toast.error(e?.response?.data?.message || 'Failed to load cases');
+      }
+    })();
 
     // Create demo user and case for demonstration
     if (userData.email === 'demo@lawfirm.com' && userCases.length === 0) {
@@ -84,29 +100,38 @@ const Dashboard = () => {
     toast.success("Logged out successfully");
   };
 
-  const handleCreateCase = () => {
+  const handleCreateCase = async () => {
     if (!newCase.title.trim() || !newCase.description.trim()) {
       toast.error("Please fill in all fields");
       return;
     }
+    try {
+      const form = new FormData();
+      form.append('title', newCase.title);
+      form.append('description', newCase.description);
+      if (selectedFiles[0]) form.append('file', selectedFiles[0]);
 
-    const caseData: Case = {
-      id: Date.now().toString(),
-      title: newCase.title,
-      description: newCase.description,
-      createdAt: new Date().toISOString(),
-      files: selectedFiles,
-      status: 'active'
-    };
+      const { data } = await api.post('/cases', form, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
 
-    const updatedCases = [...cases, caseData];
-    setCases(updatedCases);
-    localStorage.setItem(`samanyay_cases_${user?.id}`, JSON.stringify(updatedCases));
+      const created: Case = {
+        id: data._id,
+        title: data.title,
+        description: data.description,
+        createdAt: data.createdAt,
+        files: selectedFiles,
+        status: 'active'
+      };
+      setCases(prev => [...prev, created]);
 
-    setNewCase({ title: "", description: "" });
-    setSelectedFiles([]);
-    setIsCreateDialogOpen(false);
-    toast.success("Case created successfully!");
+      setNewCase({ title: "", description: "" });
+      setSelectedFiles([]);
+      setIsCreateDialogOpen(false);
+      toast.success("Case created successfully!");
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || 'Failed to create case');
+    }
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {

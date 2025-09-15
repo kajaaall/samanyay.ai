@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ArrowLeft, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
+import api from "@/lib/api";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -22,24 +23,11 @@ const Login = () => {
     setError("");
 
     try {
-      // Replace simulated API call with actual backend request
-      const response = await fetch("https://your-backend-url/api/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      const { data } = await api.post("/auth/login", { email, password });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Invalid email or password");
-      }
-
-      const data = await response.json();
-
-      // Store current user in localStorage
-      localStorage.setItem("samanyay_current_user", JSON.stringify(data));
+      // Store token and user
+      localStorage.setItem("samanyay_token", data.token);
+      localStorage.setItem("samanyay_current_user", JSON.stringify(data.user));
 
       toast.success("Login successful!");
       navigate("/dashboard");
